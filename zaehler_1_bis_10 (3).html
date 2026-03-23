@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zähler 1 bis 10</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: sans-serif; background: #0a0a1a; color: #fff; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
+  #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+  .wrap { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; padding: 2rem 1rem; gap: 2rem; }
+  .number { font-size: 96px; font-weight: 500; line-height: 1; min-height: 110px; display: flex; align-items: center; justify-content: center; }
+  .dots { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .dot { width: 28px; height: 28px; border-radius: 50%; background: #333; transition: background 0.2s; }
+  .dot.active { background: #5DCAA5; }
+  .controls { display: flex; gap: 12px; }
+  button { font-size: 15px; padding: 8px 20px; cursor: pointer; border: 1px solid #555; border-radius: 8px; background: #111; color: #fff; }
+  button:hover { background: #222; }
+  #auto-btn { min-width: 110px; }
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<div class="wrap">
+  <div class="number" id="num">1</div>
+  <div class="dots" id="dots"></div>
+  <div class="controls">
+    <button onclick="step(-1)">&#8592; Zurück</button>
+    <button id="auto-btn" onclick="toggleAuto()">&#9654; Auto</button>
+    <button onclick="step(1)">Weiter &#8594;</button>
+  </div>
+</div>
+<script>
+/* ── Counter ── */
+let current = 1, timer = null;
+const numEl = document.getElementById('num');
+const dotsEl = document.getElementById('dots');
+const autoBtn = document.getElementById('auto-btn');
+for (let i = 1; i <= 10; i++) {
+  const d = document.createElement('div');
+  d.className = 'dot'; d.id = 'dot' + i;
+  dotsEl.appendChild(d);
+}
+function render() {
+  numEl.textContent = current;
+  for (let i = 1; i <= 10; i++)
+    document.getElementById('dot'+i).classList.toggle('active', i <= current);
+}
+function step(dir) {
+  current += dir;
+  if (current > 10) current = 1;
+  if (current < 1) current = 10;
+  render();
+}
+function toggleAuto() {
+  if (timer) { clearInterval(timer); timer = null; autoBtn.textContent = '\u25BA Auto'; }
+  else {
+    timer = setInterval(() => { current = current >= 10 ? 1 : current + 1; render(); }, 800);
+    autoBtn.textContent = '\u23F9 Stop';
+  }
+}
+render();
+
+/* ── Realistic Kingfisher drawn purely on Canvas ── */
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+function drawBird(cx, cy, wingPhase, sc) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.scale(sc, sc);
+
+  // wing beat: 0=up, PI=down
+  const wBeat = Math.sin(wingPhase * Math.PI * 2);
+  const wY = wBeat * 30; // tip offset
+
+  /* ---- TAIL ---- */
+  ctx.beginPath();
+  ctx.moveTo(-80, 0);
+  ctx.lineTo(-115, -12 + wBeat*4);
+  ctx.lineTo(-105, 2);
+  ctx.lineTo(-115, 14 - wBeat*4);
+  ctx.closePath();
+  const tailGrad = ctx.createLinearGradient(-115,0,-80,0);
+  tailGrad.addColorStop(0, '#023e8a');
+  tailGrad.addColorStop(1, '#0077b6');
+  ctx.fillStyle = tailGrad;
+  ctx.fill();
+
+  /* ---- UPPER WING ---- */
+  ctx.beginPath();
+  ctx.moveTo(-20, -8);
+  ctx.bezierCurveTo(-10, -30-wY*0.6, 30, -55-wY, 70, -42-wY);
+  ctx.bezierCurveTo(50, -28-wY*0.5, 10, -10, -15, 2);
+  ctx.closePath();
+  const wingGrad = ctx.createLinearGradient(0,-55,70,-20);
+  wingGrad.addColorStop(0, '#48cae4');
+  wingGrad.addColorStop(0.4, '#0096c7');
+  wingGrad.addColorStop(1, '#023e8a');
+  ctx.fillStyle = wingGrad;
+  ctx.fill();
+  // wing feather lines
+  ctx.strokeStyle = 'rgba(0,180,230,0.35)';
+  ctx.lineWidth = 0.8;
+  for (let i = 0; i < 5; i++) {
+    const t = 0.2 + i * 0.15;
+    const wx = -20 + t*90;
+    const wy = -8 - t*(47+wY) + (1-t)*10;
+    ctx.beginPath();
+    ctx.moveTo(-20 + t*35, -8 - t*18);
+    ctx.lineTo(wx, wy);
+    ctx.stroke();
+  }
+
+  /* ---- LOWER WING (partial, tucked under belly) ---- */
+  ctx.beginPath();
+  ctx.moveTo(-15, 6);
+  ctx.bezierCurveTo(0, 20+wY*0.3, 40, 35+wY*0.5, 65, 28+wY*0.4);
+  ctx.bezierCurveTo(45, 18, 10, 8, -10, 4);
+  ctx.closePath();
+  const lWingGrad = ctx.createLinearGradient(0,35,65,10);
+  lWingGrad.addColorStop(0, '#90e0ef');
+  lWingGrad.addColorStop(1, '#0077b6');
+  ctx.fillStyle = lWingGrad;
+  ctx.globalAlpha = 0.6;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  /* ---- BODY ---- */
+  // Back (blue-teal dorsal)
+  const bodyGrad = ctx.createLinearGradient(-60,-18, 60, 18);
+  bodyGrad.addColorStop(0, '#00b4d8');
+  bodyGrad.addColorStop(0.35, '#0077b6');
+  bodyGrad.addColorStop(1, '#023e8a');
+  ctx.beginPath();
+  ctx.ellipse(0, -4, 75, 18, 0, 0, Math.PI*2);
+  ctx.fillStyle = bodyGrad;
+  ctx.fill();
+
+  // Iridescent sheen
+  const sheenGrad = ctx.createLinearGradient(-50,-20,50,10);
+  sheenGrad.addColorStop(0, 'rgba(180,255,255,0)');
+  sheenGrad.addColorStop(0.45, 'rgba(180,255,255,0.18)');
+  sheenGrad.addColorStop(0.55, 'rgba(255,255,255,0.1)');
+  sheenGrad.addColorStop(1, 'rgba(180,255,255,0)');
+  ctx.beginPath();
+  ctx.ellipse(0, -4, 75, 18, 0, 0, Math.PI*2);
+  ctx.fillStyle = sheenGrad;
+  ctx.fill();
+
+  // Belly (orange)
+  const bellyGrad = ctx.createLinearGradient(0,0,0,26);
+  bellyGrad.addColorStop(0, '#f4a261');
+  bellyGrad.addColorStop(0.6, '#e76f51');
+  bellyGrad.addColorStop(1, '#c1440e');
+  ctx.beginPath();
+  ctx.ellipse(5, 10, 55, 14, 0.1, 0, Math.PI*2);
+  ctx.fillStyle = bellyGrad;
+  ctx.fill();
+
+  // Belly highlight
+  ctx.beginPath();
+  ctx.ellipse(0, 6, 30, 6, 0, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(255,210,160,0.2)';
+  ctx.fill();
+
+  /* ---- HEAD ---- */
+  const headGrad = ctx.createRadialGradient(58,-12,2, 58,-8,22);
+  headGrad.addColorStop(0, '#00b4d8');
+  headGrad.addColorStop(0.5, '#0077b6');
+  headGrad.addColorStop(1, '#023e8a');
+  ctx.beginPath();
+  ctx.ellipse(60, -8, 22, 20, -0.1, 0, Math.PI*2);
+  ctx.fillStyle = headGrad;
+  ctx.fill();
+
+  // Crown (dark cobalt with fine streaks)
+  ctx.beginPath();
+  ctx.moveTo(40,-14);
+  ctx.bezierCurveTo(48,-32, 72,-30, 80,-16);
+  ctx.bezierCurveTo(72,-22, 52,-24, 40,-14);
+  ctx.fillStyle = '#03045e';
+  ctx.globalAlpha = 0.85;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  // Crown streaks
+  ctx.strokeStyle = 'rgba(100,210,240,0.5)';
+  ctx.lineWidth = 0.7;
+  for (let i = 0; i < 4; i++) {
+    ctx.beginPath();
+    ctx.moveTo(44 + i*8, -14);
+    ctx.lineTo(46 + i*7, -26);
+    ctx.stroke();
+  }
+
+  // White throat patch
+  ctx.beginPath();
+  ctx.ellipse(72, 2, 9, 6, 0.4, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fill();
+
+  // White loral stripe (cheek bar)
+  ctx.beginPath();
+  ctx.ellipse(62, 4, 10, 4, -0.2, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.fill();
+
+  /* ---- EYE ---- */
+  // outer ring
+  ctx.beginPath();
+  ctx.arc(68, -10, 7, 0, Math.PI*2);
+  ctx.fillStyle = '#fff';
+  ctx.fill();
+  // iris
+  ctx.beginPath();
+  ctx.arc(68, -10, 5.5, 0, Math.PI*2);
+  ctx.fillStyle = '#4a0e0e';
+  ctx.fill();
+  // pupil
+  ctx.beginPath();
+  ctx.arc(68.3, -10, 3.5, 0, Math.PI*2);
+  ctx.fillStyle = '#050505';
+  ctx.fill();
+  // specular
+  ctx.beginPath();
+  ctx.arc(70, -12, 1.5, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.fill();
+  // small secondary highlight
+  ctx.beginPath();
+  ctx.arc(67, -8.5, 0.7, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.fill();
+
+  /* ---- BEAK ---- */
+  // Upper mandible
+  ctx.beginPath();
+  ctx.moveTo(80, -10);
+  ctx.lineTo(130, -5);
+  ctx.lineTo(80, -4);
+  ctx.closePath();
+  const beakGrad = ctx.createLinearGradient(80,-10,130,-5);
+  beakGrad.addColorStop(0, '#111');
+  beakGrad.addColorStop(1, '#2a2a2a');
+  ctx.fillStyle = beakGrad;
+  ctx.fill();
+  // Lower mandible
+  ctx.beginPath();
+  ctx.moveTo(80, -3);
+  ctx.lineTo(130, -4);
+  ctx.lineTo(80, 2);
+  ctx.closePath();
+  ctx.fillStyle = '#1a1a1a';
+  ctx.fill();
+  // Culmen ridge highlight
+  ctx.beginPath();
+  ctx.moveTo(81,-9);
+  ctx.lineTo(128,-5);
+  ctx.strokeStyle = 'rgba(80,80,80,0.7)';
+  ctx.lineWidth = 0.8;
+  ctx.stroke();
+  // Beak base
+  ctx.beginPath();
+  ctx.arc(80,-6,4,0,Math.PI*2);
+  ctx.fillStyle = '#0a0a0a';
+  ctx.fill();
+
+  /* ---- FEET (tucked up, tiny) ---- */
+  ctx.strokeStyle = '#c1440e';
+  ctx.lineWidth = 1.5;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(10,16); ctx.lineTo(8,26); ctx.moveTo(8,26); ctx.lineTo(4,30);
+  ctx.moveTo(8,26); ctx.lineTo(10,31); ctx.moveTo(8,26); ctx.lineTo(13,29);
+  ctx.moveTo(20,17); ctx.lineTo(19,27); ctx.moveTo(19,27); ctx.lineTo(15,31);
+  ctx.moveTo(19,27); ctx.lineTo(21,32); ctx.moveTo(19,27); ctx.lineTo(24,30);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+const bird = { x: -150, y: 200, speed: 2.8, phase: 0, bobTime: 0 };
+function resetBird() {
+  bird.x = -150;
+  bird.y = canvas.height * (0.15 + Math.random() * 0.62);
+  bird.speed = 2.2 + Math.random() * 1.5;
+  bird.phase = Math.random();
+}
+resetBird();
+
+let lastTs = 0;
+function animate(ts) {
+  const dt = Math.min(ts - lastTs, 40); lastTs = ts;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  bird.phase += dt * 0.006;
+  bird.bobTime += dt * 0.002;
+  const bob = Math.sin(bird.bobTime * Math.PI * 2) * 5;
+  bird.x += bird.speed * (dt / 16);
+
+  const bx = bird.x;
+  const by = bird.y + bob;
+  const sc = 0.95 + Math.random()*0; // stable scale
+
+  // Soft glow behind bird
+  const grd = ctx.createRadialGradient(bx, by, 5, bx, by, 80);
+  grd.addColorStop(0, 'rgba(0,180,220,0.15)');
+  grd.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grd;
+  ctx.beginPath();
+  ctx.ellipse(bx, by, 80, 50, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  drawBird(bx, by, bird.phase, sc);
+
+  if (bird.x > canvas.width + 200) resetBird();
+  requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
