@@ -26,16 +26,20 @@
   <div class="dots" id="dots"></div>
   <div class="controls">
     <button onclick="step(-1)">&#8592; Zurück</button>
-    <button id="auto-btn" onclick="toggleAuto()">&#9654; Auto</button>
+    <button id="color-btn" onclick="toggleColor()">🎨 Bunt</button>
     <button onclick="step(1)">Weiter &#8594;</button>
+  </div>
+  <div class="controls" style="margin-top:-8px;">
+    <button id="spd-1" onclick="setSpeed(1)" style="border-color:#5DCAA5;color:#5DCAA5;">Langsam</button>
+    <button id="spd-2" onclick="setSpeed(2)">Schnell</button>
+    <button id="spd-3" onclick="setSpeed(3)">Sehr schnell</button>
   </div>
 </div>
 <script>
 /* ── Counter (1–3) ── */
-let current = 1, timer = null;
+let current = 1;
 const numEl = document.getElementById('num');
 const dotsEl = document.getElementById('dots');
-const autoBtn = document.getElementById('auto-btn');
 for (let i = 1; i <= 3; i++) {
   const d = document.createElement('div');
   d.className = 'dot'; d.id = 'dot' + i;
@@ -53,14 +57,25 @@ function step(dir) {
   if (current < 1) current = 3;
   render();
 }
-function toggleAuto() {
-  if (timer) { clearInterval(timer); timer = null; autoBtn.textContent = '\u25BA Auto'; }
-  else {
-    timer = setInterval(() => { current = current >= 3 ? 1 : current + 1; render(); }, 800);
-    autoBtn.textContent = '\u23F9 Stop';
-  }
+let colorful = false;
+function toggleColor() {
+  colorful = !colorful;
+  const btn = document.getElementById('color-btn');
+  btn.style.borderColor = colorful ? '#f4a261' : '';
+  btn.style.color = colorful ? '#f4a261' : '';
+  btn.textContent = colorful ? '🎨 Normal' : '🎨 Bunt';
 }
 render();
+
+let speedMult = 1;
+function setSpeed(lvl) {
+  speedMult = lvl === 1 ? 1 : lvl === 2 ? 2.2 : 4;
+  ['spd-1','spd-2','spd-3'].forEach((id,i) => {
+    const el = document.getElementById(id);
+    el.style.borderColor = (i+1 === lvl) ? '#5DCAA5' : '';
+    el.style.color = (i+1 === lvl) ? '#5DCAA5' : '';
+  });
+}
 
 /* ── Canvas ── */
 const canvas = document.getElementById('bg-canvas');
@@ -70,7 +85,7 @@ resize();
 window.addEventListener('resize', resize);
 
 /* ── Draw Kingfisher ── */
-function drawBird(cx, cy, wingPhase, drinkTilt, drunkTilt, drunkWobble) {
+function drawBird(cx, cy, wingPhase, drinkTilt, drunkTilt, drunkWobble, isColorful) {
   ctx.save();
   ctx.translate(cx, cy);
   if (drinkTilt !== 0) ctx.rotate(drinkTilt * 0.35);
@@ -84,7 +99,11 @@ function drawBird(cx, cy, wingPhase, drinkTilt, drunkTilt, drunkWobble) {
   ctx.beginPath();
   ctx.moveTo(-80, 0); ctx.lineTo(-115, -12+wBeat*4); ctx.lineTo(-105, 2); ctx.lineTo(-115, 14-wBeat*4); ctx.closePath();
   let g = ctx.createLinearGradient(-115,0,-80,0);
-  g.addColorStop(0,'#023e8a'); g.addColorStop(1,'#0077b6');
+  if (isColorful) {
+    g.addColorStop(0,'#cc00ff'); g.addColorStop(1,'#ff6600');
+  } else {
+    g.addColorStop(0,'#023e8a'); g.addColorStop(1,'#0077b6');
+  }
   ctx.fillStyle = g; ctx.fill();
 
   // upper wing
@@ -94,7 +113,11 @@ function drawBird(cx, cy, wingPhase, drinkTilt, drunkTilt, drunkWobble) {
   ctx.bezierCurveTo(50,-28-wY*0.5, 10,-10, -15,2);
   ctx.closePath();
   g = ctx.createLinearGradient(0,-55,70,-20);
-  g.addColorStop(0,'#48cae4'); g.addColorStop(0.4,'#0096c7'); g.addColorStop(1,'#023e8a');
+  if (isColorful) {
+    g.addColorStop(0,'#ff66ff'); g.addColorStop(0.4,'#ffaa00'); g.addColorStop(1,'#00ccff');
+  } else {
+    g.addColorStop(0,'#48cae4'); g.addColorStop(0.4,'#0096c7'); g.addColorStop(1,'#023e8a');
+  }
   ctx.fillStyle = g; ctx.fill();
   ctx.strokeStyle='rgba(0,180,230,0.35)'; ctx.lineWidth=0.8;
   for(let i=0;i<5;i++){const t=0.2+i*0.15;ctx.beginPath();ctx.moveTo(-20+t*35,-8-t*18);ctx.lineTo(-20+t*90,-8-t*(47+wY)+(1-t)*10);ctx.stroke();}
@@ -105,12 +128,20 @@ function drawBird(cx, cy, wingPhase, drinkTilt, drunkTilt, drunkWobble) {
   ctx.bezierCurveTo(0,20+wY*0.3, 40,35+wY*0.5, 65,28+wY*0.4);
   ctx.bezierCurveTo(45,18, 10,8, -10,4); ctx.closePath();
   g = ctx.createLinearGradient(0,35,65,10);
-  g.addColorStop(0,'#90e0ef'); g.addColorStop(1,'#0077b6');
+  if (isColorful) {
+    g.addColorStop(0,'#aaff00'); g.addColorStop(1,'#00ccff');
+  } else {
+    g.addColorStop(0,'#90e0ef'); g.addColorStop(1,'#0077b6');
+  }
   ctx.fillStyle=g; ctx.globalAlpha=0.6; ctx.fill(); ctx.globalAlpha=1;
 
   // body back
   g = ctx.createLinearGradient(-60,-18,60,18);
-  g.addColorStop(0,'#00b4d8'); g.addColorStop(0.35,'#0077b6'); g.addColorStop(1,'#023e8a');
+  if (isColorful) {
+    g.addColorStop(0,'#ff00cc'); g.addColorStop(0.3,'#ff6600'); g.addColorStop(0.6,'#00ff88'); g.addColorStop(1,'#0066ff');
+  } else {
+    g.addColorStop(0,'#00b4d8'); g.addColorStop(0.35,'#0077b6'); g.addColorStop(1,'#023e8a');
+  }
   ctx.beginPath(); ctx.ellipse(0,-4,75,18,0,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
   g=ctx.createLinearGradient(-50,-20,50,10);
   g.addColorStop(0,'rgba(180,255,255,0)'); g.addColorStop(0.45,'rgba(180,255,255,0.18)'); g.addColorStop(0.55,'rgba(255,255,255,0.1)'); g.addColorStop(1,'rgba(180,255,255,0)');
@@ -124,10 +155,14 @@ function drawBird(cx, cy, wingPhase, drinkTilt, drunkTilt, drunkWobble) {
 
   // head
   g=ctx.createRadialGradient(58,-12,2,58,-8,22);
-  g.addColorStop(0,'#00b4d8'); g.addColorStop(0.5,'#0077b6'); g.addColorStop(1,'#023e8a');
+  if (isColorful) {
+    g.addColorStop(0,'#ff44aa'); g.addColorStop(0.5,'#cc00ff'); g.addColorStop(1,'#6600cc');
+  } else {
+    g.addColorStop(0,'#00b4d8'); g.addColorStop(0.5,'#0077b6'); g.addColorStop(1,'#023e8a');
+  }
   ctx.beginPath(); ctx.ellipse(60,-8,22,20,-0.1,0,Math.PI*2); ctx.fillStyle=g; ctx.fill();
   ctx.beginPath(); ctx.moveTo(40,-14); ctx.bezierCurveTo(48,-32,72,-30,80,-16); ctx.bezierCurveTo(72,-22,52,-24,40,-14);
-  ctx.fillStyle='#03045e'; ctx.globalAlpha=0.85; ctx.fill(); ctx.globalAlpha=1;
+  ctx.fillStyle=isColorful?'#330066':'#03045e'; ctx.globalAlpha=0.85; ctx.fill(); ctx.globalAlpha=1;
   ctx.strokeStyle='rgba(100,210,240,0.5)'; ctx.lineWidth=0.7;
   for(let i=0;i<4;i++){ctx.beginPath();ctx.moveTo(44+i*8,-14);ctx.lineTo(46+i*7,-26);ctx.stroke();}
   ctx.beginPath(); ctx.ellipse(72,2,9,6,0.4,0,Math.PI*2); ctx.fillStyle='rgba(255,255,255,0.85)'; ctx.fill();
@@ -206,24 +241,28 @@ function drawBeerGlass(x, y, fillLevel, rotation) {
 
 /* ── Stars/bubbles for drunk effect ── */
 let drunkStars = [];
+const drunkSymbols = ['★','★','💫','🍺','⭐','✦'];
 function spawnDrunkStars(x, y) {
-  for(let i=0;i<12;i++){
-    const angle = (i/12)*Math.PI*2;
-    drunkStars.push({ x, y, angle, dist:0, life:1, speed:1.5+Math.random() });
+  for(let i=0;i<8;i++){
+    const angle = Math.random()*Math.PI*2;
+    drunkStars.push({ x, y, angle, dist:0, life:1, speed:2+Math.random()*3,
+      sym: drunkSymbols[Math.floor(Math.random()*drunkSymbols.length)],
+      size: 18+Math.floor(Math.random()*16) });
   }
 }
 function updateDrunkStars(dt) {
   drunkStars = drunkStars.filter(s=>s.life>0);
   for(const s of drunkStars){
     s.dist += s.speed*(dt/16);
-    s.life -= 0.008*(dt/16)*16;
+    s.angle += 0.03*(dt/16);
+    s.life -= 0.012*(dt/16);
     const sx = s.x + Math.cos(s.angle)*s.dist;
-    const sy = s.y + Math.sin(s.angle)*s.dist - s.dist*0.3;
+    const sy = s.y + Math.sin(s.angle)*s.dist - s.dist*0.5;
     ctx.save();
     ctx.globalAlpha = s.life;
+    ctx.font = s.size+'px sans-serif';
     ctx.fillStyle = '#f4e04a';
-    ctx.font = '16px sans-serif';
-    ctx.fillText('★', sx, sy);
+    ctx.fillText(s.sym, sx, sy);
     ctx.restore();
   }
 }
@@ -274,7 +313,7 @@ function animate(ts) {
   bird.stateTimer += dt;
 
   if (bird.state === S_FLY) {
-    bird.x += bird.speed*(dt/16);
+    bird.x += bird.speed*speedMult*(dt/16);
     bird.phase += dt*0.006;
     bird.bobTime += dt*0.002;
     if (bird.x > midX-30 && bird.x < midX+30) {
@@ -305,7 +344,7 @@ function animate(ts) {
       if (current === 3) {
         bird.state = S_DRUNK;
         bird.stateTimer = 0;
-        bird.drunkWobble = 1;
+        bird.drunkWobble = 1.0;
         spawnDrunkStars(bird.x, bird.y-30);
       } else {
         bird.state = S_THROW;
@@ -314,7 +353,7 @@ function animate(ts) {
     }
   }
   else if (bird.state === S_THROW) {
-    bird.x += bird.speed*(dt/16);
+    bird.x += bird.speed*speedMult*(dt/16);
     bird.phase += dt*0.006;
     bird.bobTime += dt*0.002;
     bird.glass.vy += 0.35*(dt/16);
@@ -325,23 +364,28 @@ function animate(ts) {
     if (bird.x > canvas.width+200) { step(1); resetBird(); }
   }
   else if (bird.state === S_DRUNK) {
-    // Staggering in place: wobble left/right, no forward movement
-    const t = bird.stateTimer/2000;
-    bird.drunkAngle = Math.sin(t*Math.PI*6)*0.45*(1-Math.min(t,1)*0.3);
-    bird.phase += dt*0.004;
-    bird.bobTime += dt*0.004;
+    const t = bird.stateTimer/2600;
+    // Wild erratic wobble: fast oscillation + slow drift
+    bird.drunkAngle = Math.sin(t*Math.PI*10)*0.75 + Math.sin(t*Math.PI*3)*0.3;
+    // stagger up/down and sideways
+    bird.y += Math.sin(bird.stateTimer*0.008)*1.2*(dt/16);
+    bird.x += Math.sin(bird.stateTimer*0.004)*0.8*(dt/16);
+    bird.phase += dt*0.012; // flap wildly
+    bird.bobTime += dt*0.008;
+    // keep spawning stars continuously
+    if (bird.stateTimer % 180 < dt) spawnDrunkStars(bird.x, bird.y-30);
     // throw glass too
     bird.glass.vy += 0.35*(dt/16);
     bird.glass.x += bird.glass.vx*(dt/16);
     bird.glass.y += bird.glass.vy*(dt/16);
     bird.glass.rot += bird.glass.vrot*(dt/16);
     if (bird.glass.y > canvas.height+120) bird.glass.visible = false;
-    if (bird.stateTimer > 1800) {
+    if (bird.stateTimer > 2600) {
       // start loop
       bird.state = S_LOOP;
       bird.stateTimer = 0;
       bird.drunkAngle = 0;
-      const loopR = 70;
+      const loopR = 140;
       bird.loopCx = bird.x;
       bird.loopCy = bird.y - loopR;
       bird.loopAngle = Math.PI/2; // start at bottom of circle
@@ -349,14 +393,14 @@ function animate(ts) {
   }
   else if (bird.state === S_LOOP) {
     // Full loop: bird orbits around loopCx/loopCy
-    const loopR = 70;
-    const loopSpeed = 0.004;
+    const loopR = 140;
+    const loopSpeed = 0.003;
     bird.loopAngle -= loopSpeed*dt; // counter-clockwise (upward first)
     bird.x = bird.loopCx + Math.cos(bird.loopAngle)*loopR;
     bird.y = bird.loopCy + Math.sin(bird.loopAngle)*loopR;
     bird.phase += dt*0.008;
     bird.drunkWobble = 0.5;
-    if (bird.stateTimer > (2*Math.PI/loopSpeed)) {
+    if (bird.stateTimer > 2200) {
       // loop done
       bird.state = S_RECOVER;
       bird.stateTimer = 0;
@@ -371,7 +415,7 @@ function animate(ts) {
     const t = Math.min(bird.stateTimer/600,1);
     bird.drunkWobble = (1-t)*0.4;
     bird.drunkAngle = Math.sin(bird.stateTimer*0.015)*(1-t)*0.3;
-    bird.x += bird.speed*(dt/16);
+    bird.x += bird.speed*speedMult*(dt/16);
     bird.phase += dt*0.006;
     bird.bobTime += dt*0.002;
     if (t>=1) { bird.state=S_FLY; bird.stateTimer=0; bird.drunkWobble=0; bird.drunkAngle=0; }
@@ -381,23 +425,16 @@ function animate(ts) {
   const bob = (bird.state===S_LOOP) ? 0 : Math.sin(bird.bobTime*Math.PI*2)*5;
   const bx = bird.x, by = bird.y+bob;
 
-  // glow (extra red-ish when drunk)
-  const glowColor = bird.drunkWobble>0.3 ? 'rgba(200,80,80,0.15)' : 'rgba(0,180,220,0.12)';
-  const grd = ctx.createRadialGradient(bx,by,5,bx,by,80);
-  grd.addColorStop(0,glowColor); grd.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=grd;
-  ctx.beginPath(); ctx.ellipse(bx,by,80,50,0,0,Math.PI*2); ctx.fill();
+  // glow (only when not drunk/looping)
+  if (bird.drunkWobble <= 0.1 && bird.state !== S_LOOP) {
+    const grd = ctx.createRadialGradient(bx,by,5,bx,by,80);
+    grd.addColorStop(0,'rgba(0,180,220,0.12)'); grd.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=grd;
+    ctx.beginPath(); ctx.ellipse(bx,by,80,50,0,0,Math.PI*2); ctx.fill();
+  }
 
   // loop trail
-  if (bird.state===S_LOOP) {
-    ctx.save();
-    ctx.strokeStyle='rgba(240,180,20,0.25)';
-    ctx.lineWidth=3;
-    ctx.beginPath();
-    ctx.arc(bird.loopCx, bird.loopCy, 70, 0, Math.PI*2);
-    ctx.stroke();
-    ctx.restore();
-  }
+
 
   if (bird.glass.visible) drawBeerGlass(bird.glass.x, bird.glass.y, Math.max(0.05,bird.glass.fill), bird.glass.rot);
   updateSplash(dt);
@@ -417,8 +454,35 @@ function animate(ts) {
     ctx.rotate(loopRot);
     ctx.translate(-birdDrawX, -birdDrawY);
   }
-  drawBird(birdDrawX, birdDrawY, bird.phase, bird.drinkTilt, bird.drunkAngle, bird.drunkWobble);
+  drawBird(birdDrawX, birdDrawY, bird.phase, bird.drinkTilt, bird.drunkAngle, bird.drunkWobble, colorful);
   ctx.restore();
+
+  // Speech bubble when drunk
+  if (bird.state === S_DRUNK) {
+    const hiccupTexts = ['Hiiick!','*hicks*','Prost!!','🍺🍺🍺','Waaah!'];
+    const idx = Math.floor(bird.stateTimer/400) % hiccupTexts.length;
+    const bx2 = birdDrawX, by2 = birdDrawY;
+    ctx.save();
+    ctx.font = 'bold 18px sans-serif';
+    const txt = hiccupTexts[idx];
+    const tw = ctx.measureText(txt).width;
+    const bx3 = bx2+20, by3 = by2-55;
+    // bubble
+    ctx.fillStyle='rgba(255,255,255,0.92)';
+    ctx.strokeStyle='rgba(0,0,0,0.3)';
+    ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.roundRect(bx3-8, by3-22, tw+16, 30, 10);
+    ctx.fill(); ctx.stroke();
+    // tail
+    ctx.beginPath();
+    ctx.moveTo(bx3+5, by3+8); ctx.lineTo(bx2+30, by2-30); ctx.lineTo(bx3+20, by3+8);
+    ctx.fillStyle='rgba(255,255,255,0.92)'; ctx.fill();
+    // text
+    ctx.fillStyle='#c1440e';
+    ctx.fillText(txt, bx3, by3-2);
+    ctx.restore();
+  }
 
   requestAnimationFrame(animate);
 }
