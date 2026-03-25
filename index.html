@@ -33,6 +33,7 @@
     <button id="spd-1" onclick="setSpeed(1)" style="border-color:#5DCAA5;color:#5DCAA5;">Langsam</button>
     <button id="spd-2" onclick="setSpeed(2)">Schnell</button>
     <button id="spd-3" onclick="setSpeed(3)">Sehr schnell</button>
+    <button id="chirp-btn" onclick="toggleChirp()">🔊 Zwitschern</button>
   </div>
 </div>
 <script>
@@ -68,6 +69,16 @@ function toggleColor() {
 render();
 
 let speedMult = 1;
+let chirpEnabled = true;
+function toggleChirp() {
+  chirpEnabled = !chirpEnabled;
+  const btn = document.getElementById('chirp-btn');
+  btn.textContent = chirpEnabled ? '🔊 Zwitschern' : '🔇 Zwitschern';
+  btn.style.borderColor = chirpEnabled ? '' : '#888';
+  btn.style.color = chirpEnabled ? '' : '#888';
+  // stop Hawaii immediately if turning off while drunk
+  if (!chirpEnabled) stopHawaii();
+}
 function setSpeed(lvl) {
   speedMult = lvl === 1 ? 1 : lvl === 2 ? 2.2 : 4;
   ['spd-1','spd-2','spd-3'].forEach((id,i) => {
@@ -93,7 +104,7 @@ function getAudio() {
 
 // Chirp: short sweet bird tweet
 let chirpTimer = 0;
-const CHIRP_INTERVAL = 1800;
+const CHIRP_INTERVAL = 1200;
 function playChirp() {
   try {
     const ac = getAudio();
@@ -401,7 +412,7 @@ function animate(ts) {
     bird.phase += dt*0.006;
     bird.bobTime += dt*0.002;
     chirpTimer += dt;
-    if (chirpTimer > CHIRP_INTERVAL) { chirpTimer = 0; playChirp(); }
+    if (chirpTimer > CHIRP_INTERVAL) { chirpTimer = 0; if (chirpEnabled) playChirp(); }
     if (bird.x > midX-30 && bird.x < midX+30) {
       bird.state = S_DRINK_APPEAR;
       bird.stateTimer = 0;
@@ -433,7 +444,7 @@ function animate(ts) {
         bird.drunkWobble = 1.0;
         spawnDrunkStars(bird.x, bird.y-30);
         chirpTimer = 0;
-        startHawaii();
+        if (chirpEnabled) startHawaii();
       } else {
         bird.state = S_THROW;
         bird.stateTimer = 0;
@@ -445,7 +456,7 @@ function animate(ts) {
     bird.phase += dt*0.006;
     bird.bobTime += dt*0.002;
     chirpTimer += dt;
-    if (chirpTimer > CHIRP_INTERVAL) { chirpTimer = 0; playChirp(); }
+    if (chirpTimer > CHIRP_INTERVAL) { chirpTimer = 0; if (chirpEnabled) playChirp(); }
     bird.glass.vy += 0.35*(dt/16);
     bird.glass.x += bird.glass.vx*(dt/16);
     bird.glass.y += bird.glass.vy*(dt/16);
